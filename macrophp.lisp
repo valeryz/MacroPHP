@@ -1,4 +1,7 @@
+;;
+;; Macro Preprocessor for High Productivity (MacroPHP)
 ;; Copyright (c) 2009 Valeriy Zamarayev
+;;
 
 (defpackage :php (:use :cl))
 
@@ -14,18 +17,20 @@
     (write x :pretty t :escape nil)
     (values)))
 
-(defmacro defprinter ((typespec obj &optional (priority 1)) &body body)
-  `(set-pprint-dispatch ',typespec
-			(lambda (stream ,obj)
-			  (declare (ignorable ,obj))
-			  (macrolet ((fmt (&rest args) `(format stream ,@args))
-				     (write-str (arg) `(cl:write-string ,arg stream)))
-			    ,@body))
-			,priority
-			*php-pprint-dispatch*))
+(defun set-php-pprint-dispatch (typespec function &optional (priority 0))
+  (set-pprint-dispatch typespec function priority *php-pprint-dispatch*))
+
+(defmacro defprinter ((typespec obj &optional (priority 0)) &body body)
+  `(set-php-pprint-dispatch ',typespec
+			    (lambda (stream ,obj)
+			      (declare (ignorable ,obj))
+			      (macrolet ((fmt (&rest args) `(format stream ,@args))
+					 (write-str (arg) `(cl:write-string ,arg stream)))
+				,@body))
+			    ,priority))
 
 (defun undefprinter (typespec)
-  (set-pprint-dispatch typespec nil))
+  (set-php-pprint-dispatch typespec nil))
 
 (defun eq-t-p (x)
   (eq t x))
@@ -65,15 +70,13 @@
 
 (defmacro defspecialform (form &body body)
   (let ((arg (gensym)))
-    `(set-pprint-dispatch '(cons (member ,(first form)))
+    `(set-php-pprint-dispatch '(cons (member ,(first form)))
 			  (lambda (stream ,arg)
 			    (destructuring-bind ,form ,arg
 			      (declare (ignorable ,(first form)))
 			      (macrolet ((fmt (&rest args) `(format stream ,@args))
 					 (write-str (arg) `(cl:write-string ,arg stream)))
-				,@body)))
-			    10
-			    *php-pprint-dispatch*)))
+				,@body))))))
   
 (defun pprint-block (stream block &optional colon at-sign)
   (declare (ignore colon at-sign))
@@ -84,92 +87,138 @@
 (defspecialform (if cond true false)
   (fmt "if (~W) ~/pprint-block/ else ~/pprint-block/" cond (list true) (list false)))
 
-;; how do we map lisp expressions to PHP ones
-(loop
+;; descriptions of varios operations
+(defvar *ops* (loop
    for ops in (reverse
 	       ;; op php-op associativity arity
-	       '(((not ! :right 1))
-		 ((/ / :left 2)
-		  (* * :left 2)
-		  (mod % :left 2))
-		 ((+ + :left 2)
-		  (- - :left 2))
-		 ((concat \. :left 2))
-		 ((<< << :left 2)
-		  (>> >> :left 2))
-		 ((< < :left 2)
-		  (<= <= :none 2)
-		  (> > :none 2)
-		  (>= >= :none 2))
-		 ((/= != :none 2)
-		  (= = :none 2))
-		 ((ref & :left 1))
-		 ((logand & :left 2))
-		 ((logxor ^ :left 2))
-		 ((logior \| :left 2))
-		 ((and && :left 2))
-		 ((setq = :right 2))
-		 ((or \|\| :left 2))))
-   for k from 0
-   do (loop for (op php-op assoc arity) in ops
-	 do
-	   (setf (get op :php-op) php-op)
-	   (setf (get op :associativity) assoc)
-	   (setf (get op :arity) arity)
-	   (setf (get op :precedence) k)))
+	       ;; each sublist contains ops of the same priority
+	       '(((clone "clone" :none 1 :makespace t)
+		  (new "new" :none 1 :makespace t))
+		 ((aref "" :left 2 :noauto t))
+		 ((~ "~" :none 1)
+		  (- "-" :none 1 :noauto t)
+		  (@ "@" :none 1)
+		  (cast "" :none 2 :noauto t))
+		 ((instanceof "instanceof" :none 2))
+		 ((not "!" :right 1))
+		 ((/ "/" :left 2)
+		  (* "*" :left 2)
+		  (mod "%" :left 2))
+		 ((+ "+" :left 2)
+		  (- "-" :left 2))
+		 ((concat "." :left 2))
+		 ((<< "<<" :left 2)
+		  (>> ">>" :left 2))
+		 ((< "<" :left 2)
+		  (<= "<=" :none 2)
+		  (> ">" :none 2)
+		  (>= ">=" :none 2))
+		 ((/= "!=" :none 2)
+		  (= "==" :none 2))
+		 ((ref "&" :left 1))
+		 ((logand "&" :left 2))
+		 ((logxor "^" :left 2))
+		 ((logior "|" :left 2))
+		 ((and "&&" :left 2))
+		 ((or "||" :left 2))
+		 ((|?:| "" :left 3 :noauto t))
+		 ((setq "=" :right 2)
+		  (+= "+=" :right 2)
+		  (-= "-=" :right 2)
+		  (*= "*=" :right 2)
+		  (/= "/=" :right 2)
+		  (.= ".=" :right 2)
+		  (%= "%=" :right 2)
+		  (&= "&=" :right 2)
+		  (\|= "|=" :right 2)
+		  (^= "^=" :right 2)
+		  (<<= "<<=" :right 2)
+		  (>>= ">>=" :right 2))
+		 ((xor "xor" :left 2))
+		 ((\, "," :left 2 :skip-first-space t))))
+   for k from 1
+   nconc (loop for op-details in ops
+	    collect (cons k op-details))))
 
-(defun php-op (exp)
+(defmacro in-op-pprint-block (&body body)
+  `(let ((nest (<= precedence *B*)))
+     (pprint-logical-block (s (cdr op) :prefix (if nest "(" "") :suffix (if nest ")" ""))
+     ,@body)))
+
+(defun make-unary-op (php-op assoc precedence &rest keys &key makespace &allow-other-keys)
+  (declare (ignore assoc keys))
+  (lambda (s op)
+    (in-op-pprint-block
+      (assert (= 2 (length op)))
+      (let ((*B* precedence))
+	(write-string php-op s)
+	(when makespace (write-string " " s))
+	(write (pprint-pop) :stream s)))))
+
+(defun make-binary-op (php-op assoc precedence &rest keys &key skip-first-space &allow-other-keys)
+  (declare (ignore keys))
+  (lambda (s op)
+    (in-op-pprint-block
+      (assert (= 3 (length op)))
+      (let ((*B*
+	     (if (eq :left assoc)
+		 (1- precedence)
+		 precedence)))
+	(write (pprint-pop) :stream s))
+      ;; first space is skipped for , (comma)
+      (unless skip-first-space (write-char #\Space s))
+      (write-string php-op s)
+      (write-char #\Space s)
+      (pprint-indent :block 4 s)
+      (pprint-newline :fill s)
+      (let ((*B*
+	     (if (eq :right assoc)
+		 (1- precedence)
+		 precedence)))
+	(write (pprint-pop) :stream s)))))
+
+(loop for op-details in *ops*
+     do (destructuring-bind (priority op php-op assoc arity &rest rest &key noauto &allow-other-keys)
+	    op-details
+	  (unless noauto
+	    (set-pprint-dispatch `(cons (member ,op))
+				 (ecase arity
+				   (1 (apply #'make-unary-op php-op assoc priority rest))
+				   (2 (apply #'make-binary-op php-op assoc priority rest)))
+				 10
+				 *php-pprint-dispatch*))))
+
+(defun cons-op-p (exp op)
   (and (consp exp)
-       (symbolp (car exp))
-       (get (car exp) :php-op)))
+       (eq (car exp) op)))
 
-(defun associativity (exp)
-  (get (car exp) :associativity))
+(defun unary-minus-p (exp)
+  (cons-op-p exp '-))
 
-(defun precedence (exp)
-  (get (car exp) :precedence))
+(defun aref-p (exp)
+  (cons-op-p exp 'aref))
 
-(defun arity (exp)
-  (get (car exp) :arity))
+(defun find-op (op arity)
+  (find-if (lambda (op-details) (and (eq op (second op-details))
+				     (eql arity (fifth op-details))))
+	   *ops*))
 
-(defun unary-p (exp)
-  (= 1 (arity exp)))
+(set-php-pprint-dispatch '(satisfies unary-minus-p)
+			 (make-unary-op "-" :none (car (find-op '- 1))))
 
-(defun binary-p (exp)
-  (= 2 (arity exp)))
 
-(defun pprint-php-exp (s op)
-  (let ((nest (<= (precedence op) *B*)))
-    (flet ((write-op ()
-	     (write-string (string-downcase (symbol-name (php-op op))) s)))
-      (pprint-logical-block (s (cdr op) :prefix (if nest "(" "") :suffix (if nest ")" ""))
-	(cond ((unary-p op)
-	       ;; TODO: convert those asserts into throwing of
-	       ;; compilation errors
-	       (assert (= 2 (length op)))
-	       (let ((*B* (precedence op)))
-		 (write-op)
-		 (write (pprint-pop) :stream s)))
-	      ((binary-p op)
-	       (assert (= 3 (length op)))
-	       (let ((*B*
-		      (if (eq :left (associativity op))
-			  (1- (precedence op))
-			  (precedence op))))
-		 (write (pprint-pop) :stream s))
-	       (write-char #\Space s)
-	       (write-op)
-	       (write-char #\Space s)
-	       (pprint-indent :block 4 s)
-	       (pprint-newline :fill s)
-	       (let ((*B*
-		      (if (eq :right (associativity op))
-			  (1- (precedence op))
-			  (precedence op))))
-		 (write (pprint-pop) :stream s))))))))
+(set-php-pprint-dispatch '(satisfies aref-p)
+			 (let ((precedence (car (find-op 'aref 2))))
+			   (lambda (s op)
+			     (in-op-pprint-block
+			       (assert (= 3 (length op)))
+			       (let ((*B* (1- precedence)))
+				 (write (pprint-pop) :stream s))
+			       (write-string "[" s)
+			       (let ((*B* 0))
+				 (write (pprint-pop) :stream s))
+			       (write-string "]" s)))))
 
-(defprinter ((satisfies php-op) exp)
-  (pprint-php-exp stream exp))
 
-;; TODO rest of assingment ops
-;; should be like optimized stuff from others
+;; TODO casts
+;; TODO ternary operator
