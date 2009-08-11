@@ -8,6 +8,7 @@
 (in-package :php)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (in-package :php)
   (defvar *php-pprint-dispatch* (copy-pprint-dispatch))
   (proclaim '(special *B*)))
 
@@ -17,7 +18,7 @@
     (write x :pretty t :escape nil)
     (values)))
 
-(defun set-php-pprint-dispatch (typespec function &optional (priority 0))
+(defun set-php-pprint-dispatch (typespec function &optional (priority 5))
   (set-pprint-dispatch typespec function priority *php-pprint-dispatch*))
 
 (defmacro defprinter ((typespec obj &optional (priority 0)) &body body)
@@ -85,14 +86,15 @@
 ;; defspecialform should allow destructuring, and make patterns
 ;; from destructuring
 (defspecialform (if cond true false)
-  (fmt "if (~W) ~/pprint-block/ else ~/pprint-block/" cond (list true) (list false)))
+  (fmt "if (~W) ~/php::pprint-block/ else ~/php::pprint-block/" cond (list true) (list false)))
 
 ;; descriptions of varios operations
 (defvar *ops* (loop
    for ops in (reverse
 	       ;; op php-op associativity arity
 	       ;; each sublist contains ops of the same priority
-	       '(((clone "clone" :none 1 :makespace t)
+	       '(((funcall "" :left 1 :noauto t))
+		 ((clone "clone" :none 1 :makespace t)
 		  (new "new" :none 1 :makespace t))
 		 ((aref "" :left 2 :noauto t))
 		 ((~ "~" :none 1)
@@ -259,3 +261,19 @@
 			       (pprint-newline :fill s)
 			       (let ((*B* precedence))
 				 (write (pprint-pop) :stream s))))))
+
+(set-php-pprint-dispatch 'cons
+			 (let ((precedence (car (find-op 'funcall 1))))
+			   (lambda (s op)
+			     (pprint-logical-block (s nil)
+			       (when (<= precedence *B*)
+				 (write-string "(" s))
+			       (let ((*B* (1- precedence)))
+				 (write (car op) :stream s))
+			       (write-string "(" s)
+			       (pprint-indent :block 4 s)
+			       (let ((*B* 0))
+				 (format s "~<~@{~W~^, ~:_~}~:>" (cdr op)))
+			       (write-string ")" s)
+			       (when (<= precedence *B*)
+				 (write-string ")" s))))))
