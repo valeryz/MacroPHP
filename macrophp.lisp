@@ -198,6 +198,9 @@
 (defun aref-p (exp)
   (cons-op-p exp 'aref))
 
+(defun cast-p (exp)
+  (cons-op-p exp 'cast))
+
 (defun find-op (op arity)
   (find-if (lambda (op-details) (and (eq op (second op-details))
 				     (eql arity (fifth op-details))))
@@ -219,6 +222,16 @@
 				 (write (pprint-pop) :stream s))
 			       (write-string "]" s)))))
 
-
-;; TODO casts
-;; TODO ternary operator
+(set-php-pprint-dispatch '(satisfies cast-p)
+			 (let ((precedence (car (find-op 'cast 2))))
+			   (lambda (s op)
+			     (in-op-pprint-block
+			       (assert (= 3 (length op)))
+			       (let ((type (pprint-pop)))
+				 (unless (find type '(int float string array object bool))
+				   (error "cast to wrong type ~a" type))
+				 (write-string "(" s)
+				 (write type :stream s)
+				 (write-string ")" s))
+			       (let ((*B* precedence))
+				 (write (pprint-pop) :stream s))))))
