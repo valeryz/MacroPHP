@@ -91,6 +91,10 @@
 		 ((clone "clone" :none 1 :makespace t)
 		  (new "new" :none 1 :makespace t))
 		 ((aref "" :left 2 :noauto t))
+		 ((inc "++" :none 1)
+		  (dec "--" :none 1)
+		  (postinc "" :none 1 :noauto t)
+		  (postdec "" :none 1 :noauto t))
 		 ((~ "~" :none 1)
 		  (- "-" :none 1 :noauto t)
 		  (@ "@" :none 1)
@@ -208,12 +212,31 @@
 				     (eql arity (fifth op-details))))
 	   *ops*))
 
+(defun postinc-p (exp)
+  (cons-op-p exp 'postinc))
+
+(defun postdec-p (exp)
+  (cons-op-p exp 'postdec))
+
 (defun special-form-p (form)
   (and (consp form)
        (member (first form) *special-forms*)))
 
 (set-php-pprint-dispatch '(satisfies unary-minus-p)
 			 (make-unary-op "-" :none (car (find-op '- 1))))
+
+(defmacro postfix-op (typespec op php-op)
+  `(set-php-pprint-dispatch ',typespec
+			    (let ((precedence (car (find-op ',op 1))))
+			      (lambda (s op)
+				(in-op-pprint-block
+				  (assert (= 2 (length op)))
+				  (let ((*B* precedence))
+				 (write (pprint-pop) :stream s))
+				  (write-string ,php-op s))))))
+
+(postfix-op (satisfies postinc-p) postinc "++")
+(postfix-op (satisfies postdec-p) postdec "--")
 
 (set-php-pprint-dispatch '(satisfies aref-p)
 			 (let ((precedence (car (find-op 'aref 2))))
