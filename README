@@ -1,39 +1,13 @@
-MacroPHP (Macro Processor for High Productivity) is a lisp-like
-language that compiles into PHP.
+MacroPHP (Macro Processor for High Productivity) is intended to be a
+lisp-like language that compiles into PHP.
 
-MacroPHP is basically PHP with parenthesized syntax which enables the
-use of powerful LISP macro facilities. These macro facilities provide
-much better abstraction mechanisms than those of PHP itself.
+Currently, there's a pretty-printer of sexp-based representation of a
+PHP program into text.
 
-As the SICP book says, a programming language can be characterized by
-the three things it offers to the programmer:
- * primitives
- * means of combination
- * means of abstraction
+The idea is, once the whole PHP is supported, write macroexpansion,
+some additional "convenience" special forms, and use the language and
+the host lisp to generate PHP code from declarative web site
+descriptions.
 
-PHP has superb primitives for web programming. All these primitives
-are acessible as a large library of functions built into PHP. PHP's
-means of combination of primitives are much like in other programming
-languages, with standard control structures, functions, classes etc.
+This is all very raw, undocumented, and basically doesn't work yet.
 
-As for the means of abstration, while functions and classes do provide
-some facilities for it, the abstractions that are obtained this way do
-not look like the base language, you cannot abstract them even
-further. This is why often PHP code works on primitives level
-only. Because it is well done and suited for the task, programmers use
-it. Because there's no way to create clean and useful abstractions in
-PHP, programmers either don't create them, resulting in a
-spagetti-like mess that the PHP code is so infamous about, or move
-away from PHP to cleaner languages such as Python or Ruby or LISP.
-
-In contrast to PHP, LISP is coherent at any level of abstraction. On
-every level, you have the same LISP. This allows to raise the
-abstraction level nearly endlessly. For that reason, LISP programs are
-often succinct, and more manageable.
-
-This project is an attempt to bridge the gap of PHP's abstraction
-facilities by providing LISP like ones through a preprocessor.
-
-By combining PHP's powerful primitives and LISP's powerful means of
-combination and means of abstraction, we attempt to get a powerful mix
-for web programming!
