@@ -6,20 +6,18 @@
   (if have-false
       (apply #'fmt `("~@<if (~W)~8I~?else~8I~?~:>"
 		   ,cond
-		   ,@(multiple-value-list (pprint-block-format true))
-		   ,@(multiple-value-list (pprint-block-format false))))
+		   ,@(multiple-value-list (pprint-block-format true t))
+		   ,@(multiple-value-list (pprint-block-format false t))))
       (apply #'fmt `("~@<if (~W)~8I~?~:>"
 		   ,cond
-		   ,@(multiple-value-list (pprint-block-format true))))))
+		   ,@(multiple-value-list (pprint-block-format true t))))))
   
-
 (defspecialform (while cond stmt)
   (apply #'fmt (list*
 		"~@<while (~W)~8I~?~:>"
 		cond
 		(multiple-value-list (pprint-block-format stmt)))))
   
-
 (defspecialform (for (&optional
 		      (init nil have-init)
 		      (cond nil have-cond)

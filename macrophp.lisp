@@ -9,7 +9,7 @@
 
 (defvar *php-pprint-dispatch* (copy-pprint-dispatch))
 
-(proclaim '(special *B*))
+(declaim (special *B*))
 
 (defvar *special-forms* nil
   "PHP special forms")
@@ -279,9 +279,11 @@
 				 (format s "~<~@{~W~^, ~:_~}~:>" (cdr op)))
 			       (write-string ")" s)
 			       (when (<= precedence *B*)
-				 (write-string ")" s))))))
+				 (write-string ")" s)))))
+			 0)
 
-(defun pprint-block-format (block)
-  (if (progn-p block)
+(defun pprint-block-format (block &optional check-if)
+  (if (or (progn-p block)
+	  (and check-if (cons-op-p block 'if)))
       (values " {~:@_~W~0I~:@_} " (list block))
-      (values "~:@_~W~:[;~;~]~:@_" (list block (special-form-p block)))))
+      (values "~:@_~W~:[;~;~]~0I~:@_" (list block (special-form-p block)))))
