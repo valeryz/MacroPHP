@@ -7,10 +7,12 @@
 
 (in-package :php)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (in-package :php)
-  (defvar *php-pprint-dispatch* (copy-pprint-dispatch))
-  (proclaim '(special *B*)))
+(defvar *php-pprint-dispatch* (copy-pprint-dispatch))
+
+(proclaim '(special *B*))
+
+(defvar *special-forms* nil
+  "PHP special forms")
 
 (defun phpize (x)
   (let ((*print-pprint-dispatch* *php-pprint-dispatch*)
@@ -71,23 +73,32 @@
 
 (defmacro defspecialform (form &body body)
   (let ((arg (gensym)))
-    `(set-php-pprint-dispatch '(cons (member ,(first form)))
-			  (lambda (stream ,arg)
-			    (destructuring-bind ,form ,arg
-			      (declare (ignorable ,(first form)))
-			      (macrolet ((fmt (&rest args) `(format stream ,@args))
-					 (write-str (arg) `(cl:write-string ,arg stream)))
-				,@body))))))
-  
-(defun pprint-block (stream block &optional colon at-sign)
-  (declare (ignore colon at-sign))
-  (format stream  "~@<{~;~8I~:@_~{~W~^~:@_~}~-8I~:@_~;}~:>" block))
+    `(progn (pushnew ',(first form) *special-forms*)
+	    (set-php-pprint-dispatch '(cons (member ,(first form)))
+				     (lambda (stream ,arg)
+				       (destructuring-bind ,form ,arg
+					 (declare (ignorable ,(first form)))
+					 (labels ((fmt (&rest args) (apply #'format stream args))
+						  (write-str (arg) (cl:write-string arg stream)))
+					   ,@body)))))))
 
+(defun pprint-block-format (block)
+  (if (progn-p block)
+      (values " {~:@_~W~0I~:@_} " (list block))
+      (values "~:@_~W;~:@_" (list block))))
+		
 ;; defspecialform should allow destructuring, and make patterns
 ;; from destructuring
-(defspecialform (if cond true false)
-  (fmt "if (~W) ~/php::pprint-block/ else ~/php::pprint-block/" cond (list true) (list false)))
-
+(defspecialform (if cond true &optional (false nil have-false))
+  (if have-false
+      (apply #'fmt `("~@<if (~W)~8I~?else~8I~?~:>"
+		   ,cond
+		   ,@(multiple-value-list (pprint-block-format true))
+		   ,@(multiple-value-list (pprint-block-format false))))
+      (apply #'fmt `("~@<if (~W)~8I~?~:>"
+		   ,cond
+		   ,@(multiple-value-list (pprint-block-format true))))))
+  
 ;; descriptions of varios operations
 (defvar *ops* (loop
    for ops in (reverse
@@ -206,14 +217,20 @@
 (defun ternary-p (exp)
   (cons-op-p exp '|?:|))
 
+(defun progn-p (exp)
+  (cons-op-p exp 'progn))
+
 (defun find-op (op arity)
   (find-if (lambda (op-details) (and (eq op (second op-details))
 				     (eql arity (fifth op-details))))
 	   *ops*))
 
+(defun special-form-p (form)
+  (and (consp form)
+       (member (first form) *special-forms*)))
+
 (set-php-pprint-dispatch '(satisfies unary-minus-p)
 			 (make-unary-op "-" :none (car (find-op '- 1))))
-
 
 (set-php-pprint-dispatch '(satisfies aref-p)
 			 (let ((precedence (car (find-op 'aref 2))))
@@ -248,20 +265,23 @@
 			       (assert (= 4 (length op)))
 			       (let ((*B* precedence))
 				 (write (pprint-pop) :stream s))
-			       (write-char #\Space s)
-			       (write-string "?" s)
-			       (write-char #\Space s)
+			       (write-string " ? " s)
 			       (pprint-indent :block 4 s)
 			       (pprint-newline :fill s)
 			       (let ((*B* precedence))
 				 (write (pprint-pop) :stream s))
-			       (write-char #\Space s)
-			       (write-string ":" s)
-			       (write-char #\Space s)
+			       (write-string " : " s)
 			       (pprint-newline :fill s)
 			       (let ((*B* precedence))
 				 (write (pprint-pop) :stream s))))))
 
+(set-php-pprint-dispatch '(satisfies progn-p)
+			 (lambda (s form)
+			   (format s "~{~W~:[;~;~]~^~@:_~}"
+				   (mapcan (lambda (form)
+					     (list form (special-form-p form)))
+					   (cdr form)))))
+			 
 (set-php-pprint-dispatch 'cons
 			 (let ((precedence (car (find-op 'funcall 1))))
 			   (lambda (s op)
