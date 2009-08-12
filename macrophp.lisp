@@ -17,7 +17,7 @@
 (defun phpize (x)
   (let ((*print-pprint-dispatch* *php-pprint-dispatch*)
 	(*B* 0))
-    (write x :pretty t :escape nil)
+    (write x :pretty t :escape nil :level nil)
     (values)))
 
 (defun set-php-pprint-dispatch (typespec function &optional (priority 5))
@@ -82,23 +82,6 @@
 						  (write-str (arg) (cl:write-string arg stream)))
 					   ,@body)))))))
 
-(defun pprint-block-format (block)
-  (if (progn-p block)
-      (values " {~:@_~W~0I~:@_} " (list block))
-      (values "~:@_~W;~:@_" (list block))))
-		
-;; defspecialform should allow destructuring, and make patterns
-;; from destructuring
-(defspecialform (if cond true &optional (false nil have-false))
-  (if have-false
-      (apply #'fmt `("~@<if (~W)~8I~?else~8I~?~:>"
-		   ,cond
-		   ,@(multiple-value-list (pprint-block-format true))
-		   ,@(multiple-value-list (pprint-block-format false))))
-      (apply #'fmt `("~@<if (~W)~8I~?~:>"
-		   ,cond
-		   ,@(multiple-value-list (pprint-block-format true))))))
-  
 ;; descriptions of varios operations
 (defvar *ops* (loop
    for ops in (reverse
@@ -297,3 +280,8 @@
 			       (write-string ")" s)
 			       (when (<= precedence *B*)
 				 (write-string ")" s))))))
+
+(defun pprint-block-format (block)
+  (if (progn-p block)
+      (values " {~:@_~W~0I~:@_} " (list block))
+      (values "~:@_~W~:[;~;~]~:@_" (list block (special-form-p block)))))
