@@ -28,3 +28,15 @@
 		have-cond cond
 		have-step step
 		(multiple-value-list (pprint-block-format stmt)))))
+
+(defspecialform (cond &rest conditions)
+  (flet ((clause (c &key initial else)
+	   (destructuring-bind (cond stmt)
+	       c
+	     (apply #'fmt
+		    (list* "~:[~:[elseif~;if~] (~W)~;else~*~*~]~8I~?"
+			   else initial cond (multiple-value-list (pprint-block-format stmt)))))))
+    (pprint-logical-block (stream nil)
+      (clause (first conditions) :initial t)
+      (loop for c in (rest conditions)
+	 do (clause c :else (eq-t-p (first c)))))))
