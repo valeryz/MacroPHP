@@ -55,3 +55,41 @@
 			   (list "~@<foreach (~W as ~W)~8I~?~:>"
 				 array-expr binding))
 		       (multiple-value-list (pprint-block-format stmt)))))
+
+
+(defmacro break/continue (stmt)
+  `(defspecialform (,stmt &optional (level 1 level-provided-p))
+     (assert (plusp level))
+     (write-str ,(string-downcase (symbol-name stmt)))
+     (if level-provided-p
+       (fmt " ~W;" level)
+       (write-str ";"))))
+
+(break/continue break)
+(break/continue continue)
+
+(defspecialform (switch exp &rest cases)
+  (pprint-logical-block (stream nil)
+    (fmt "switch (~W) {~0I~:@_" exp)
+    (loop for case in cases
+       do
+	 (if (or (eq (first case) 'otherwise)
+		 (eq-t-p (first case)))
+	     (write-str "default:")
+	     (fmt "case ~W:" (first case)))
+	 (fmt "~8I~:@_~W~0I~:@_" (cons 'progn (rest case))))
+    (fmt "}~0I~:@_")))
+
+(defmacro oneargspecial (name &optional str-name)				  
+  `(defspecialform (,name exp)
+     (write-str (or ,str-name ,(string-downcase (symbol-name name))))
+     (fmt " ~@_~W;" exp)))
+
+(oneargspecial return)
+(oneargspecial include)
+(oneargspecial require)
+(oneargspecial include)
+(oneargspecial require)
+(oneargspecial include-once "include_once")
+(oneargspecial require-once "require_once")
+(oneargspecial echo)

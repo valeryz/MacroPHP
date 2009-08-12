@@ -283,7 +283,7 @@
 
 (set-php-pprint-dispatch '(satisfies progn-p)
 			 (lambda (s form)
-			   (format s "~{~W~:[;~;~]~^~@:_~}"
+			   (format s "~{~W~:[;~;~]~^ ~@:_~}"
 				   (mapcan (lambda (form)
 					     (list form (special-form-p form)))
 					   (cdr form)))))
