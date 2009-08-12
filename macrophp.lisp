@@ -282,8 +282,9 @@
 				 (write-string ")" s)))))
 			 0)
 
-(defun pprint-block-format (block &optional check-if)
-  (if (or (progn-p block)
+(defun pprint-block-format (block &key check-if braces)
+  (if (or braces
+	  (progn-p block)
 	  (and check-if (cons-op-p block 'if)))
       (values " {~:@_~W~0I~:@_} " (list block))
       (values "~:@_~W~:[;~;~]~0I~:@_" (list block (special-form-p block)))))
