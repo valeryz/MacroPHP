@@ -3,7 +3,11 @@
 ;; Copyright (c) 2009 Valeriy Zamarayev
 ;;
 
-(defpackage :php (:use :cl))
+(defpackage :php (:use :cl)
+	    (:export #:if #:when #:clone #:new #:aref #:inc #:dec
+	    #:postinc #:postdec
+	    ;; TODO: export all the symbols
+	    ))
 
 (in-package :php)
 
@@ -129,7 +133,7 @@
 		  (/= "/=" :right 2)
 		  (.= ".=" :right 2)
 		  (%= "%=" :right 2)
-		  (&= "&=" :right 2)
+		  (\&= "&=" :right 2)
 		  (\|= "|=" :right 2)
 		  (^= "^=" :right 2)
 		  (<<= "<<=" :right 2)
