@@ -5,9 +5,9 @@
 
 (defpackage :php (:use :cl)
 	    (:export #:if #:when #:clone #:new #:aref #:inc #:dec
-	    #:postinc #:postdec
-	    ;; TODO: export all the symbols
-	    ))
+		     #:postinc #:postdec
+		     ;; TODO: export all the symbols
+		     ))
 
 (in-package :php)
 
@@ -93,66 +93,66 @@
 
 ;; descriptions of varios operations
 (defvar *ops* (loop
-   for ops in (reverse
-	       ;; op php-op associativity arity
-	       ;; each sublist contains ops of the same priority
-	       '(((funcall "" :left 1 :noauto t))
-		 ((clone "clone" :none 1 :makespace t)
-		  (new "new" :none 1 :makespace t))
-		 ((aref "" :left 2 :noauto t))
-		 ((inc "++" :none 1)
-		  (dec "--" :none 1)
-		  (postinc "" :none 1 :noauto t)
-		  (postdec "" :none 1 :noauto t))
-		 ((~ "~" :none 1)
-		  (- "-" :none 1 :noauto t)
-		  (@ "@" :none 1)
-		  (cast "" :none 2 :noauto t))
-		 ((instanceof "instanceof" :none 2))
-		 ((not "!" :right 1))
-		 ((/ "/" :left 2)
-		  (* "*" :left 2)
-		  (mod "%" :left 2))
-		 ((+ "+" :left 2)
-		  (- "-" :left 2))
-		 ((concat "." :left 2))
-		 ((<< "<<" :left 2)
-		  (>> ">>" :left 2))
-		 ((< "<" :left 2)
-		  (<= "<=" :none 2)
-		  (> ">" :none 2)
-		  (>= ">=" :none 2))
-		 ((/= "!=" :none 2)
-		  (= "==" :none 2))
-		 ((ref "&" :left 1))
-		 ((logand "&" :left 2))
-		 ((logxor "^" :left 2))
-		 ((logior "|" :left 2))
-		 ((and "&&" :left 2))
-		 ((or "||" :left 2))
-		 ((|?:| "" :left 3 :noauto t))
-		 ((setq "=" :right 2)
-		  (+= "+=" :right 2)
-		  (-= "-=" :right 2)
-		  (*= "*=" :right 2)
-		  (/= "/=" :right 2)
-		  (.= ".=" :right 2)
-		  (%= "%=" :right 2)
-		  (\&= "&=" :right 2)
-		  (\|= "|=" :right 2)
-		  (^= "^=" :right 2)
-		  (<<= "<<=" :right 2)
-		  (>>= ">>=" :right 2))
-		 ((xor "xor" :left 2))
-		 ((\, "," :left 2 :skip-first-space t))))
-   for k from 1
-   nconc (loop for op-details in ops
-	    collect (cons k op-details))))
+		 for ops in (reverse
+			     ;; op php-op associativity arity
+			     ;; each sublist contains ops of the same priority
+			     '(((funcall "" :left 1 :noauto t))
+			       ((clone "clone" :none 1 :makespace t)
+				(new "new" :none 1 :makespace t))
+			       ((aref "" :left 2 :noauto t))
+			       ((inc "++" :none 1)
+				(dec "--" :none 1)
+				(postinc "" :none 1 :noauto t)
+				(postdec "" :none 1 :noauto t))
+			       ((~ "~" :none 1)
+				(- "-" :none 1 :noauto t)
+				(@ "@" :none 1)
+				(cast "" :none 2 :noauto t))
+			       ((instanceof "instanceof" :none 2))
+			       ((not "!" :right 1))
+			       ((/ "/" :left 2)
+				(* "*" :left 2)
+				(mod "%" :left 2))
+			       ((+ "+" :left 2)
+				(- "-" :left 2))
+			       ((concat "." :left 2))
+			       ((<< "<<" :left 2)
+				(>> ">>" :left 2))
+			       ((< "<" :left 2)
+				(<= "<=" :none 2)
+				(> ">" :none 2)
+				(>= ">=" :none 2))
+			       ((/= "!=" :none 2)
+				(= "==" :none 2))
+			       ((ref "&" :left 1))
+			       ((logand "&" :left 2))
+			       ((logxor "^" :left 2))
+			       ((logior "|" :left 2))
+			       ((and "&&" :left 2))
+			       ((or "||" :left 2))
+			       ((|?:| "" :left 3 :noauto t))
+			       ((setq "=" :right 2)
+				(+= "+=" :right 2)
+				(-= "-=" :right 2)
+				(*= "*=" :right 2)
+				(/= "/=" :right 2)
+				(.= ".=" :right 2)
+				(%= "%=" :right 2)
+				(\&= "&=" :right 2)
+				(\|= "|=" :right 2)
+				(^= "^=" :right 2)
+				(<<= "<<=" :right 2)
+				(>>= ">>=" :right 2))
+			       ((xor "xor" :left 2))
+			       ((\, "," :left 2 :skip-first-space t))))
+		 for k from 1
+		 nconc (loop for op-details in ops
+			  collect (cons k op-details))))
 
 (defmacro in-op-pprint-block (&body body)
   `(let ((nest (<= precedence *B*)))
      (pprint-logical-block (s (cdr op) :prefix (if nest "(" "") :suffix (if nest ")" ""))
-     ,@body)))
+       ,@body)))
 
 (defun make-unary-op (php-op assoc precedence &rest keys &key makespace &allow-other-keys)
   (declare (ignore assoc keys))
@@ -187,15 +187,15 @@
 	(write (pprint-pop) :stream s)))))
 
 (loop for op-details in *ops*
-     do (destructuring-bind (priority op php-op assoc arity &rest rest &key noauto &allow-other-keys)
-	    op-details
-	  (unless noauto
-	    (set-pprint-dispatch `(cons (member ,op))
-				 (ecase arity
-				   (1 (apply #'make-unary-op php-op assoc priority rest))
-				   (2 (apply #'make-binary-op php-op assoc priority rest)))
-				 10
-				 *php-pprint-dispatch*))))
+   do (destructuring-bind (priority op php-op assoc arity &rest rest &key noauto &allow-other-keys)
+	  op-details
+	(unless noauto
+	  (set-pprint-dispatch `(cons (member ,op))
+			       (ecase arity
+				 (1 (apply #'make-unary-op php-op assoc priority rest))
+				 (2 (apply #'make-binary-op php-op assoc priority rest)))
+			       10
+			       *php-pprint-dispatch*))))
 
 (defun cons-op-p (exp op)
   (and (consp exp)
@@ -244,7 +244,7 @@
 				(in-op-pprint-block
 				  (assert (= 2 (length op)))
 				  (let ((*B* precedence))
-				 (write (pprint-pop) :stream s))
+				    (write (pprint-pop) :stream s))
 				  (write-string ,php-op s))))))
 
 (postfix-op (satisfies postinc-p) postinc "++")

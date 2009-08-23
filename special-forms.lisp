@@ -5,12 +5,12 @@
 (defspecialform (if cond true &optional (false nil have-false))
   (if have-false
       (apply #'fmt `("~@<if (~W)~8I~?else~8I~?~:>"
-		   ,cond
-		   ,@(multiple-value-list (pprint-block-format true :check-if t))
-		   ,@(multiple-value-list (pprint-block-format false :check-if t))))
+		     ,cond
+		     ,@(multiple-value-list (pprint-block-format true :check-if t))
+		     ,@(multiple-value-list (pprint-block-format false :check-if t))))
       (apply #'fmt `("~@<if (~W)~8I~?~:>"
-		   ,cond
-		   ,@(multiple-value-list (pprint-block-format true :check-if t))))))
+		     ,cond
+		     ,@(multiple-value-list (pprint-block-format true :check-if t))))))
   
 (defspecialform (while cond stmt)
   (apply #'fmt (list*
