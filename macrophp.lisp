@@ -86,6 +86,11 @@
 						  (write-str (arg) (cl:write-string arg stream)))
 					   ,@body)))))))
 
+(defmacro undefspecialform (form)
+  `(progn
+     (delete ',form *special-forms*)
+     (set-php-pprint-dispatch '(cons (member ,form)) nil)))
+
 ;; descriptions of varios operations
 (defvar *ops* (loop
    for ops in (reverse
@@ -211,6 +216,9 @@
 (defun progn-p (exp)
   (cons-op-p exp 'progn))
 
+(defun tagbody-p (exp)
+  (cons-op-p exp 'tagbody))
+
 (defun find-op (op arity)
   (find-if (lambda (op-details) (and (eq op (second op-details))
 				     (eql arity (fifth op-details))))
@@ -291,6 +299,13 @@
 				   (mapcan (lambda (form)
 					     (list form (special-form-p form)))
 					   (cdr form)))))
+
+(set-php-pprint-dispatch '(satisfies tagbody-p)
+			 (lambda (s form)
+			   (format s "~{~W~:[~:[;~;~]~;:~*~]~^ ~@:_~}"
+				   (mapcan (lambda (form)
+					     (list form (atom form) (special-form-p form)))
+					   (cdr form)))))
 			 
 (set-php-pprint-dispatch 'cons
 			 (let ((precedence (car (find-op 'funcall 1))))
@@ -312,6 +327,7 @@
 (defun pprint-block-format (block &key check-if braces)
   (if (or braces
 	  (progn-p block)
+	  (tagbody-p block)
 	  (and check-if (cons-op-p block 'if)))
       (values " {~:@_~W~0I~:@_} " (list block))
       (values "~:@_~W~:[;~;~]~0I~:@_" (list block (special-form-p block)))))

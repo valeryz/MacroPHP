@@ -2,4 +2,4 @@
 
 * nested blocks have one empty line at the end of the enclosing block
 * need implicit progn for do, while, for, foreach and so on
-
+* formatting of goto:
