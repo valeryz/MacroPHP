@@ -11,17 +11,34 @@
 
 (in-package :php)
 
-(defvar *php-pprint-dispatch* (copy-pprint-dispatch))
+(defvar *php-pprint-dispatch* (copy-pprint-dispatch)
+  "Pretty printer dispatch table for PHP code")
 
 (declaim (special *B*))
 
 (defvar *special-forms* nil
   "PHP special forms")
 
+(defvar *expect-statement* t "Whether the statement or expression is expected")
+
+(defvar *no-semicolon-constructs* '(if cond for foreach while switch progn tagbody
+				    function class)
+  "All control constructs, that need not be terminated by a semicolon in a progn")
+
+(defvar *symbol-print-names* '((true . "TRUE") (false . "FALSE"))
+  "print names for some special symbols")
+
+(defun no-semicolon-p (form)
+  "check if the form is a control construct"
+  (and (consp form)
+       (find (first form) *no-semicolon-constructs*)))
+
 (defun phpize (x)
+  "Print PHP code"
   (let ((*print-pprint-dispatch* *php-pprint-dispatch*)
 	(*B* 0))
-    (write x :pretty t :escape nil :level nil)
+    (pprint-logical-block (t nil)
+      (write x :pretty t))
     (values)))
 
 (defun set-php-pprint-dispatch (typespec function &optional (priority 5))
@@ -30,7 +47,7 @@
 (defmacro defprinter ((typespec obj &optional (priority 0)) &body body)
   `(set-php-pprint-dispatch ',typespec
 			    (lambda (stream ,obj)
-			      (declare (ignorable ,obj))
+			      (declare (ignorable stream ,obj))
 			      (macrolet ((fmt (&rest args) `(format stream ,@args))
 					 (write-str (arg) `(cl:write-string ,arg stream)))
 				,@body))
@@ -39,14 +56,12 @@
 (defun undefprinter (typespec)
   (set-php-pprint-dispatch typespec nil))
 
-(defun eq-t-p (x)
-  (eq t x))
-
 (defprinter (symbol x)
-  (write-str (string-downcase (symbol-name x))))
-
-(defprinter (null x 1)
-  (write-str "FALSE"))
+  ;; TODO: use aif
+  (let ((print-syntax (cdr (assoc x *symbol-print-names*))))
+    (if print-syntax
+	(write-str print-syntax)
+	(write-str (string-downcase (symbol-name x))))))
 
 (defun php-escape-string (x)
   (with-output-to-string (s)
@@ -72,8 +87,9 @@
   (write-str (php-escape-string x))
   (write-str "\""))
 
-(defprinter ((satisfies eq-t-p) x 2)
-  (write-str "TRUE"))
+(defprinter (null x 1)
+  ;; do nothing
+  (declare (ignore x)))
 
 (defmacro defspecialform (form &body body)
   (let ((arg (gensym)))
@@ -224,6 +240,9 @@
 				     (eql arity (fifth op-details))))
 	   *ops*))
 
+(defun eq-t-p (x)
+  (eq t x))
+
 (defun postinc-p (exp)
   (cons-op-p exp 'postinc))
 
@@ -293,13 +312,6 @@
 			       (let ((*B* precedence))
 				 (write (pprint-pop) :stream s))))))
 
-(set-php-pprint-dispatch '(satisfies progn-p)
-			 (lambda (s form)
-			   (format s "~{~W~:[;~;~]~^ ~@:_~}"
-				   (mapcan (lambda (form)
-					     (list form (special-form-p form)))
-					   (cdr form)))))
-
 (set-php-pprint-dispatch '(satisfies tagbody-p)
 			 (lambda (s form)
 			   (format s "~{~W~:[~:[;~;~]~;:~*~]~^ ~@:_~}"
@@ -323,11 +335,3 @@
 			       (when (<= precedence *B*)
 				 (write-string ")" s)))))
 			 0)
-
-(defun pprint-block-format (block &key check-if braces)
-  (if (or braces
-	  (progn-p block)
-	  (tagbody-p block)
-	  (and check-if (cons-op-p block 'if)))
-      (values " {~:@_~W~0I~:@_} " (list block))
-      (values "~:@_~W~:[;~;~]~0I~:@_" (list block (special-form-p block)))))

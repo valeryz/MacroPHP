@@ -1,70 +1,91 @@
 (in-package :php)
 
-;; defspecialform should allow destructuring, and make patterns
-;; from destructuring
-(defspecialform (if cond true &optional (false nil have-false))
-  (if have-false
-      (apply #'fmt `("~@<if (~W)~8I~?else~8I~?~:>"
-		     ,cond
-		     ,@(multiple-value-list (pprint-block-format true :check-if t))
-		     ,@(multiple-value-list (pprint-block-format false :check-if t))))
-      (apply #'fmt `("~@<if (~W)~8I~?~:>"
-		     ,cond
-		     ,@(multiple-value-list (pprint-block-format true :check-if t))))))
-  
-(defspecialform (while cond stmt)
-  (apply #'fmt (list*
-		"~@<while (~W)~8I~?~:>"
-		cond
-		(multiple-value-list (pprint-block-format stmt)))))
-  
-(defspecialform (for (&optional
-		      (init nil have-init)
-		      (cond nil have-cond)
-		      (step nil have-step)) stmt)
-  (apply #'fmt (list*
-		"~@<for (~:[~*~;~W~]; ~:[~*~;~W~]; ~:[~*~;~W~])~8I~?~:>"
-		have-init init
-		have-cond cond
-		have-step step
-		(multiple-value-list (pprint-block-format stmt)))))
+(defun must-enclose-in-braces (body check-if)
+  "check if the body must be enclosed in braces, i.e. the body has more
+than one member or the body is an 'if' or 'cond' and it is a part of an enclosing
+if or cond"
+  (assert (listp body))
+  (or (cdr body) ;; more than one
+      (and check-if
+	   (listp (car body))
+	   (find (caar body) '(if cond)))))
+	 
+(defun print-body (stream body &optional no-indent empty-semicolon)
+  (let ((body (if (listp body) body (list body)))
+	(*expect-statement* t))
+      (unless no-indent (format stream "~8I~:@_"))
+      (when (and empty-semicolon (null body))
+	(write-string ";" stream))
+      (format stream "~{~W~:[;~;~]~^ ~@:_~}"
+	      (mapcan (lambda (form)
+			(list form (no-semicolon-p form)))
+		      body))
+      (unless no-indent (format stream "~0I~:@_"))))
+
+(defun ctl-body (stream body &optional check-if trailing-space)
+  (if (must-enclose-in-braces body check-if)
+      (progn 
+	(write-string " {" stream)
+	(print-body stream body)
+	(write-string "}" stream)
+	(if trailing-space
+	    (write-string " " stream)))
+      (progn
+	(print-body stream body nil t))))
+
+(defun def-body (stream body &optional colon-p at-sign-p)
+  (declare (ignore colon-p at-sign-p))
+  (write-string "{" stream)
+  (print-body stream body)
+  (write-string "}" stream))
+
+(defspecialform (while cond &rest body)
+    (fmt "~@<while (~W)~/php::ctl-body/~:>" cond body))
+
+(defspecialform (for (&optional init cond step) &rest body)
+  (let ((*expect-statement* nil))
+    (fmt "~@<for (~<~W; ~:_~W; ~:_~W~:>)~/php::ctl-body/~:>"
+	 (list init cond step) body)))
 
 (defspecialform (cond &rest conditions)
   (flet ((clause (c &key initial else)
-	   (destructuring-bind (cond stmt)
+	   (destructuring-bind (cond &rest body)
 	       c
-	     (apply #'fmt
-		    (list* "~:[~:[elseif~;if~] (~W)~;else~*~*~]~8I~?"
-			   else initial cond (multiple-value-list (pprint-block-format stmt)))))))
+	     (fmt "~:[~:[elseif~;if~] (~W)~;else~*~*~]" else initial cond)
+	     (ctl-body stream body t t))))
     (pprint-logical-block (stream nil)
       (clause (first conditions) :initial t)
       (loop for c in (rest conditions)
 	 do (clause c :else (eq-t-p (first c)))))))
 
-(defspecialform (do stmt while)
-  (apply #'fmt (append (list* "~@<do~8I~?while (~W)~:>"
-			      (multiple-value-list (pprint-block-format (if (or (progn-p stmt))
-									    stmt
-									    (list 'progn stmt)))))
-		       (list while))))
+(defspecialform (do-while while &rest body)
+  (pprint-logical-block (stream nil)
+    (fmt "do {")
+    (print-body stream body)
+    (fmt "} while (~W)" while)))
 
-(defspecialform (foreach (array-expr binding) stmt)
-  (apply #'fmt (append (if (consp binding)
-			   (list "~@<foreach (~W as ~W => ~W)~8I~?~:>"
-				 array-expr (first binding) (second binding))
-			   (list "~@<foreach (~W as ~W)~8I~?~:>"
-				 array-expr binding))
-		       (multiple-value-list (pprint-block-format stmt)))))
+(defspecialform (foreach (array-expr binding) &rest body)
+  (if (consp binding)
+      (fmt "~@<foreach (~W as ~W => ~W)~/php::ctl-body/~:>"
+	   array-expr (first binding) (second binding) body)
+      (fmt "~@<foreach (~W as ~W)~/php::ctl-body/~:>"
+	   array-expr binding body)))
 
-
+(defspecialform (progn &rest body)
+  (if *expect-statement*
+      (pprint-logical-block (stream nil)
+	(write-string "{" stream)
+	(print-body stream body)
+	(write-string "}" stream))
+      (format stream "~{~W~^, ~}" body)))
+					   
 (defmacro break/continue (stmt)
   `(defspecialform (,stmt &optional (level 1 level-provided-p))
      (assert (plusp level))
      (write-str ,(string-downcase (symbol-name stmt)))
      (if level-provided-p
-	 (fmt " ~W;" level)
-	 (write-str ";"))))
-
+	 (fmt " ~W;" level))))
+	 
 (break/continue break)
 (break/continue continue)
 
@@ -77,7 +98,7 @@
 	       (eq-t-p (first case)))
 	   (write-str "default:")
 	   (fmt "case ~W:" (first case)))
-       (fmt "~8I~:@_~W~0I~:@_" (cons 'progn (rest case))))
+	 (print-body stream (rest case)))
     (fmt "}~0I~:@_")))
 
 (defspecialform (tagbody &rest body)
@@ -85,11 +106,11 @@
      do (if (atom form)
 	    (fmt "~W:~:@_" form)
 	    (fmt "~W~:@_" form))))
-     
+
 (defmacro oneargspecial (name &optional str-name)				  
   `(defspecialform (,name exp)
      (write-str (or ,str-name ,(string-downcase (symbol-name name))))
-     (fmt " ~@_~W;" exp)))
+     (fmt " ~@_~W" exp)))
 
 (oneargspecial return)
 (oneargspecial include)
@@ -100,3 +121,17 @@
 (oneargspecial require-once "require_once")
 (oneargspecial echo)
 (oneargspecial go "goto")
+
+(defspecialform (function name (&rest vars) &rest body)
+  (fmt "~@<function ~:[~*~;~W~](~{~W~^, ~})~:@_~/php::def-body/~:>"
+       name name vars body))
+
+(defspecialform (class name (&optional base) &rest body)
+  (fmt "~@<class ~:[~*~;~W~]~:[~; extends ~W~]~:@_~/php::def-body/~:>" name name base body))
+
+;; TODO: implement comment wrapping
+(defspecialform (comment text &rest body)
+  (fmt "/* ~S */~:@_~:/php::print-body/" text body))
+
+(defspecialform (var variable &optional init)
+  (fmt "var ~W~:[~; = ~:*~W~]" variable init))
