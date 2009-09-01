@@ -3,12 +3,6 @@
 ;; Copyright (c) 2009 Valeriy Zamarayev
 ;;
 
-(defpackage :php (:use :cl :arnesi)
-	    (:export #:if #:when #:clone #:new #:aref #:inc #:dec
-		     #:postinc #:postdec
-		     ;; TODO: export all the symbols
-		     ))
-
 (in-package :php)
 
 (defvar *php-pprint-dispatch* (copy-pprint-dispatch)
