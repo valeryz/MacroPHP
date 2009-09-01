@@ -3,7 +3,7 @@
 ;; Copyright (c) 2009 Valeriy Zamarayev
 ;;
 
-(defpackage :php (:use :cl)
+(defpackage :php (:use :cl :arnesi)
 	    (:export #:if #:when #:clone #:new #:aref #:inc #:dec
 		     #:postinc #:postdec
 		     ;; TODO: export all the symbols
@@ -33,12 +33,12 @@
   (and (consp form)
        (find (first form) *no-semicolon-constructs*)))
 
-(defun phpize (x)
+(defun phpize (form)
   "Print PHP code"
   (let ((*print-pprint-dispatch* *php-pprint-dispatch*)
 	(*B* 0))
     (pprint-logical-block (t nil)
-      (write x :pretty t))
+      (write (php/macroexpand-all form) :pretty t))
     (values)))
 
 (defun set-php-pprint-dispatch (typespec function &optional (priority 5))

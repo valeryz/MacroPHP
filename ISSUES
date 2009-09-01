@@ -1,3 +1,28 @@
 -*- mode: org -*-
 
 * formatting of goto:
+* nested progn formatting:
+  PHP> (phpize '(if a b c d e))
+  if (a)
+	  b;
+  else {
+	  c;
+	  d;
+	  e;
+  } 
+  
+  but 
+  PHP> (phpize '(if a b (progn c d e)))
+  if (a)
+	  b;
+  else
+	  {
+		  c;
+		  d;
+		  e;
+	  }
+* macros can expand into code which contains control constructs in expression context!
+  proposed solutions:
+  1. detect this situation and bail out
+  2. allow control constructs in expression context, and automatially
+     transform the program to comply to PHP rules
