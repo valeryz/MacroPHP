@@ -26,3 +26,4 @@
   1. detect this situation and bail out
   2. allow control constructs in expression context, and automatially
      transform the program to comply to PHP rules
+  3. support contexts naturally.
