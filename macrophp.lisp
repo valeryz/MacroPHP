@@ -50,12 +50,24 @@
 (defun undefprinter (typespec)
   (set-php-pprint-dispatch typespec nil))
 
+
+(defun replace-slashes (name)
+  (substitute #\_ #\- name))
+
+(defun to-php (name)
+  (let ((name (replace-slashes name)))
+    (if (eql (aref name 0) #\*)
+	(string-upcase (subseq name 1 (if (eql (aref name (1- (length name))) #\*)
+					  (1- (length name))
+					  (length name))))
+	(string-downcase name))))
+
 (defprinter (symbol x)
   ;; TODO: use aif
   (let ((print-syntax (cdr (assoc x *symbol-print-names*))))
     (if print-syntax
 	(write-str print-syntax)
-	(write-str (string-downcase (symbol-name x))))))
+	(write-str (to-php (symbol-name x))))))
 
 (defun php-escape-string (x)
   (with-output-to-string (s)

@@ -27,3 +27,5 @@
   2. allow control constructs in expression context, and automatially
      transform the program to comply to PHP rules
   3. support contexts naturally.
+  4. do nothing - macro writers will have to be careful.
+
