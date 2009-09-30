@@ -4,6 +4,9 @@
   (:import-from :arnesi #:aif #:it)
   (:export 
    #:phpize
+   #:defmacro-php
+   #:php/macroexpand
+   #:php/macroexpand-all
    #:funcall
    #:clone
    #:new
@@ -74,4 +77,7 @@
    #:go
    #:comment
    #:var
+   #:if
+   #:when
+   #:unless
    ))

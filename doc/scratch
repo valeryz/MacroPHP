@@ -1,0 +1,21 @@
+
+
+(phpize `(+ ,@(calculate list of variables)))
+
+
+if (isset($_POST["myvariable"]) && !empty($_POST["myvariable"])) {
+   use $_POST["myvariable"]
+
+
+(with-post-vars (myvariable)
+   (echo myvariable))
+
+(if-post-vars (myvariable)
+   (use-post-var myvariable)
+   (dont-use-it))
+
+
+(defmacro/php if-post-vars ((&rest vars) &body body)
+   `(if (and ,@(mapcar (lambda (v) (list 'aref '$_POST (string v))))))
+
+

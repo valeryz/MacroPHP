@@ -27,12 +27,15 @@
   (and (consp form)
        (find (first form) *no-semicolon-constructs*)))
 
-(defun phpize (form)
+(declaim (special ccl::*print-catch-errors*))
+
+(defun phpize (stream form)
   "Print PHP code"
   (let ((*print-pprint-dispatch* *php-pprint-dispatch*)
+	(*print-length* nil)
 	(*B* 0))
     (pprint-logical-block (t nil)
-      (write (php/macroexpand-all form) :pretty t))
+      (write (php/macroexpand-all form) :pretty t :stream stream))
     (values)))
 
 (defun set-php-pprint-dispatch (typespec function &optional (priority 5))
@@ -95,13 +98,18 @@
 
 (defprinter (null x 1)
   ;; do nothing
-  (declare (ignore x)))
+  )
 
 (defmacro defspecialform (form &body body)
   (let ((arg (gensym)))
     `(progn (pushnew ',(first form) *special-forms*)
 	    (set-php-pprint-dispatch '(cons (member ,(first form)))
 				     (lambda (stream ,arg)
+				       (handler-bind ((error (lambda (c)
+							       (declare (ignore c))
+							       (error "Invalid number of arguments for special form ~a" ',(first form)))))
+					 (destructuring-bind ,form ,arg
+					   #+SBCL(declare (sb-ext:muffle-conditions cl:style-warning))))
 				       (destructuring-bind ,form ,arg
 					 (declare (ignorable ,(first form)))
 					 (labels ((fmt (&rest args) (apply #'format stream args))

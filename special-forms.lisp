@@ -115,8 +115,6 @@ if or cond"
 (oneargspecial return)
 (oneargspecial include)
 (oneargspecial require)
-(oneargspecial include)
-(oneargspecial require)
 (oneargspecial include-once "include_once")
 (oneargspecial require-once "require_once")
 (oneargspecial echo)

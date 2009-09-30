@@ -101,12 +101,16 @@
       ((not expanded-p) form)
     (multiple-value-setq (form expanded-p) (php/macroexpand form))))
 
-
 ;; (defmacro-php defmacro ((&rest lambda-list) &rest body)
-  
 
 (defmacro-php if (cond then &rest else)
-  `(cond (,cond ,then) (t ,@else)))
+  `(cond (,cond ,then) ,@(if else (list t else))))
+
+(defmacro-php when (cond &rest then)
+  `(cond (,cond ,@then)))
+
+(defmacro-php unless (cond &rest stmt)
+  `(cond ((not ,cond) ,@stmt)))
 
 ;; just to test it
 (defmacro-php inc (x)
