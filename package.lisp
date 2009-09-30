@@ -1,8 +1,77 @@
 
-
-(defpackage :php (:use :cl :arnesi)
-	    (:export #:if #:when #:clone #:new #:aref #:inc #:dec
-		     #:postinc #:postdec
-		     ;; TODO: export all the symbols
-		     ))
-
+(defpackage :php 
+  (:use :cl :parenscript)
+  (:import-from :arnesi #:aif #:it)
+  (:export 
+   #:phpize
+   #:funcall
+   #:clone
+   #:new
+   #:aref
+   #:inc
+   #:dec
+   #:postinc
+   #:postdec
+   #:~
+   #:-
+   #:@
+   #:cast
+   #:instanceof
+   #:not
+   #:*
+   #:/
+   #:mod
+   #:+
+   #:-
+   #:concat
+   #:<<
+   #:>>
+   #:<
+   #:<=
+   #:>
+   #:>=
+   #:/=
+   #:=
+   #:ref
+   #:logand
+   #:logxor
+   #:logior
+   #:and
+   #:or
+   #:|?:|
+   #:setq
+   #:+=
+   #:-=
+   #:*=
+   #:/=
+   #:.=
+   #:%=
+   #:\&=
+   #:\|=
+   #:^=
+   #:<<=
+   #:>>=
+   #:xor
+   #:\,
+   #:progn
+   #:tagbody
+   #:cond
+   #:for
+   #:foreach
+   #:switch
+   #:function
+   #:class
+   #:while
+   #:do-while
+   #:break
+   #:continue
+   #:return
+   #:include
+   #:require
+   #:require-once
+   #:include-once
+   #:echo
+   #:go
+   #:comment
+   #:var
+   ))
