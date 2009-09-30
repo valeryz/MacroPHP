@@ -40,12 +40,15 @@ if or cond"
   (write-string "}" stream))
 
 (defspecialform (while cond &rest body)
-    (fmt "~@<while (~W)~/php::ctl-body/~:>" cond body))
+  (pprint-logical-block (stream nil)
+    (fmt "while (~W)" cond)
+    (ctl-body stream body)))
 
 (defspecialform (for (&optional init cond step) &rest body)
   (let ((*expect-statement* nil))
-    (fmt "~@<for (~<~W; ~:_~W; ~:_~W~:>)~/php::ctl-body/~:>"
-	 (list init cond step) body)))
+    (pprint-logical-block (stream nil)
+      (fmt "<for (~<~W; ~:_~W; ~:_~W~:>)~/php::ctl-body/"
+	   (list init cond step) body))))
 
 (defspecialform (cond &rest conditions)
   (flet ((clause (c &key initial else)
@@ -65,11 +68,25 @@ if or cond"
     (fmt "} while (~W)" while)))
 
 (defspecialform (foreach (array-expr binding) &rest body)
-  (if (consp binding)
-      (fmt "~@<foreach (~W as ~W => ~W)~/php::ctl-body/~:>"
-	   array-expr (first binding) (second binding) body)
-      (fmt "~@<foreach (~W as ~W)~/php::ctl-body/~:>"
-	   array-expr binding body)))
+  (pprint-logical-block (stream nil)
+    (if (consp binding)
+	(fmt "foreach (~W as ~W => ~W)~/php::ctl-body/"
+	     array-expr (first binding) (second binding) body)
+	(fmt "foreach (~W as ~W)~/php::ctl-body/"
+	     array-expr binding body))))
+
+(defspecialform (foreach (array-expr binding) &rest body)
+  (pprint-logical-block (stream nil)
+    (write-string "foreach (" stream)
+    (write array-expr :stream stream)
+    (write-string " as " stream)    
+    (if (consp binding)
+	(progn (write (first binding) :stream stream)
+	       (write-string " => " stream)
+	       (write (second binding) :stream stream))
+	(write binding :stream stream))
+    (write-string ")" stream)
+    (ctl-body stream body)))
 
 (defspecialform (progn &rest body)
   (if *expect-statement*
@@ -121,11 +138,13 @@ if or cond"
 (oneargspecial go "goto")
 
 (defspecialform (function name (&rest vars) &rest body)
-  (fmt "~@<function ~:[~*~;~W~](~{~W~^, ~})~:@_~/php::def-body/~:>"
-       name name vars body))
+  (pprint-logical-block (stream nil)
+    (fmt "function ~:[~*~;~W~](~{~W~^, ~})~:@_~/php::def-body/"
+	 name name vars body)))
 
 (defspecialform (class name (&optional base) &rest body)
-  (fmt "~@<class ~:[~*~;~W~]~:[~; extends ~W~]~:@_~/php::def-body/~:>" name name base body))
+  (pprint-logical-block (stream nil)
+    (fmt "class ~:[~*~;~W~]~:[~; extends ~W~]~:@_~/php::def-body/" name name base body)))
 
 ;; TODO: implement comment wrapping
 (defspecialform (comment text &rest body)
