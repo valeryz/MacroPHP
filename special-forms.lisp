@@ -9,6 +9,13 @@ if or cond"
       (and check-if
 	   (listp (car body))
 	   (find (caar body) '(if cond)))))
+
+(defun remove-progn (body)
+  (assert (listp body))
+  (if (or (cdr body)
+	  (not (eq 'progn (caar body))))
+      body
+      (remove-progn (cdar body))))
 	 
 (defun print-body (stream body &optional no-indent empty-semicolon)
   (let ((body (if (listp body) body (list body)))
@@ -23,14 +30,14 @@ if or cond"
       (unless no-indent (format stream "~0I~:@_"))))
 
 (defun ctl-body (stream body &optional check-if trailing-space)
-  (if (must-enclose-in-braces body check-if)
-      (progn 
-	(write-string " {" stream)
-	(print-body stream body)
-	(write-string "}" stream)
-	(if trailing-space
-	    (write-string " " stream)))
-      (progn
+  (let ((body (remove-progn body)))
+    (if (must-enclose-in-braces body check-if)
+	(progn
+	  (write-string " {" stream)
+	  (print-body stream body)
+	  (write-string "}" stream)
+	  (if trailing-space
+	      (write-string " " stream)))
 	(print-body stream body nil t))))
 
 (defun def-body (stream body &optional colon-p at-sign-p)
