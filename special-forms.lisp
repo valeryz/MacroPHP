@@ -91,9 +91,13 @@ if or cond"
 (defspecialform (progn &rest body)
   (if *expect-statement*
       (pprint-logical-block (stream nil)
-	(write-string "{" stream)
-	(print-body stream body)
-	(write-string "}" stream))
+	(if *toplevel-progn*
+	    (let ((*toplevel-progn*))
+	      (print-body stream body t))
+	    (progn
+	      (write-string "{" stream)
+	      (print-body stream body)
+	      (write-string "}" stream))))
       (format stream "~{~W~^, ~}" body)))
 					   
 (defmacro break/continue (stmt)

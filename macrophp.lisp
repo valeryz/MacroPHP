@@ -22,6 +22,8 @@
 (defvar *symbol-print-names* '((true . "TRUE") (false . "FALSE"))
   "print names for some special symbols")
 
+(defvar *toplevel-progn* t "Only bound to t at the toplevel of phpizing")
+
 (defun no-semicolon-p (form)
   "check if the form is a control construct"
   (and (consp form)
@@ -33,9 +35,10 @@
   "Print PHP code"
   (let ((*print-pprint-dispatch* *php-pprint-dispatch*)
 	(*print-length* nil)
-	(*B* 0))
-    (pprint-logical-block (t nil)
-      (write (php/macroexpand-all form) :pretty t :stream stream))
+	(*B* 0)
+	(*toplevel-progn* t))
+    (pprint-logical-block (stream nil)
+      (write (remove-progn (php/macroexpand-all form)) :pretty t :stream stream))
     (values)))
 
 (defun set-php-pprint-dispatch (typespec function &optional (priority 5))
