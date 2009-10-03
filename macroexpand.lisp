@@ -104,7 +104,7 @@
 ;; (defmacro-php defmacro ((&rest lambda-list) &rest body)
 
 (defmacro-php if (cond then &rest else)
-  `(cond (,cond ,then) ,@(if else (list t else))))
+  `(cond (,cond ,then) ,@(if else (list (list* t else)))))
 
 (defmacro-php when (cond &rest then)
   `(cond (,cond ,@then)))
