@@ -8,5 +8,6 @@
 	       (:file "macroexpand" :depends-on ("package" "utils"))
 	       (:file "macrophp" :depends-on ("macroexpand"))
 	       (:file "macros"  :depends-on ("macroexpand"))
-	       (:file "special-forms" :depends-on ("macrophp")))
+	       (:file "special-forms" :depends-on ("macrophp"))
+	       (:file "files" :depends-on ("special-forms")))
   :depends-on ("arnesi" "parenscript"))

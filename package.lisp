@@ -70,6 +70,7 @@
    #:break
    #:continue
    #:return
+   #:rootpath
    #:include
    #:require
    #:require-once
@@ -80,5 +81,10 @@
    #:var
    #:if
    #:when
+   #:write-js-file
+   #:write-php-file
    #:unless
+   #:*document-root*
+   #:php
+   #:js
    ))
