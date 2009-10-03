@@ -148,7 +148,7 @@
 				(mod "%" :left 2))
 			       ((+ "+" :left 2)
 				(- "-" :left 2))
-			       ((concat "." :left 2))
+			       ((%concat "." :left 2))
 			       ((<< "<<" :left 2)
 				(>> ">>" :left 2))
 			       ((< "<" :left 2)
