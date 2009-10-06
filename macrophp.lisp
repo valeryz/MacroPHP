@@ -7,6 +7,73 @@
 
 (defvar *php-pprint-dispatch* (copy-pprint-dispatch)
   "Pretty printer dispatch table for PHP code")
+;; inhibit all the standard Common Lisp keywords
+;; (not very nice), but otherwise we can't use CL pretty printer
+;; reliably
+(loop for cons-op in '(
+		       defstruct
+		       block
+		       case
+		       catch
+		       ccase
+		       compiler-let
+		       cond
+		       ctypecase
+		       defclass
+		       ctypecase
+		       defconstant
+		       define-setf-expander
+		       defmacro
+		       define-modify-macro
+		       defparameter
+		       defsetf
+		       define-setf-expander
+		       deftype
+		       defun
+		       defmethod
+		       defvar
+		       do
+		       do*
+		       do-all-symbols
+		       do-external-symbols
+		       do-symbols
+		       dolist
+		       dotimes
+		       ecase
+		       etypecase
+		       eval-when
+		       flet
+		       function
+		       generic-function
+		       labels
+		       lambda
+		       let
+		       let*
+		       locally
+		       loop
+		       macrolet
+		       multiple-value-bind
+		       multiple-value-setq
+		       prog
+		       prog*
+		       progv
+		       psetf
+		       psetq
+		       quote
+		       return-from
+		       setf
+		       setq
+		       tagbody
+		       throw
+		       typecase
+		       unless
+		       unwind-protect
+		       when
+		       with-input-from-string
+		       with-open-file
+		       with-open-stream
+		       with-output-to-string)
+     do (set-pprint-dispatch `(cons (member ,cons-op)) nil 0 *php-pprint-dispatch*))
 
 (declaim (special *B*))
 
@@ -29,7 +96,7 @@
   (and (consp form)
        (find (first form) *no-semicolon-constructs*)))
 
-(declaim (special ccl::*print-catch-errors*))
+#+CCL(declaim (special ccl::*print-catch-errors*))
 
 (defun phpize (stream form)
   "Print PHP code"
