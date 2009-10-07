@@ -87,4 +87,5 @@
    #:*document-root*
    #:php
    #:js
+   #:let
    ))

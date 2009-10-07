@@ -19,3 +19,7 @@
 	((null (cdr exprs)) (car exprs))
 	(t `(concat (%concat ,(car exprs) ,(cadr exprs))
 		    ,@(cddr exprs)))))
+
+(defmacro-php let ((&rest vars) &body body)
+  `(progn ,@(loop for (var exp) in vars collect (list 'setq var exp))
+	  ,@body))
