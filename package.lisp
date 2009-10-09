@@ -85,8 +85,8 @@
    #:write-php-file
    #:unless
    #:*document-root*
-   #:php
-   #:js
+   #:php-file
+   #:js-file
    #:let
    #:macrolet
    ))

@@ -24,8 +24,8 @@
 	 (parenscript:compile-script (list 'progn code) :output-stream out)
 	 (fresh-line out)))
 
-(defmacro php (path &body code)
+(defmacro php-file (path &body code)
   `(apply #'write-php-file ,(rootpath path) ',code))
 
-(defmacro js (path &body code)
+(defmacro js-file (path &body code)
   `(apply #'write-js-file ,(rootpath path) ',code))
