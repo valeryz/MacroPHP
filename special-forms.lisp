@@ -16,6 +16,13 @@ if or cond"
 	  (not (eq 'progn (caar body))))
       body
       (remove-progn (cdar body))))
+
+(defun remove-nested-progn (body)
+  (assert (listp body))
+  (loop for form in body
+     append (if (progn-p form)
+		(remove-nested-progn (cdr form))
+		(list form))))
 	 
 (defun print-body (stream body &optional no-indent empty-semicolon)
   (let ((body (if (listp body) body (list body)))
@@ -30,7 +37,7 @@ if or cond"
       (unless no-indent (format stream "~0I~:@_"))))
 
 (defun ctl-body (stream body &optional check-if trailing-space)
-  (let ((body (remove-progn body)))
+  (let ((body (remove-progn (remove-nested-progn body))))
     (if (must-enclose-in-braces body check-if)
 	(progn
 	  (write-string " {" stream)
@@ -96,16 +103,17 @@ if or cond"
     (ctl-body stream body)))
 
 (defspecialform (progn &rest body)
-  (if *expect-statement*
-      (pprint-logical-block (stream nil)
-	(if *toplevel-progn*
-	    (let ((*toplevel-progn*))
-	      (print-body stream body t))
-	    (progn
-	      (write-string "{" stream)
-	      (print-body stream body)
-	      (write-string "}" stream))))
-      (format stream "~{~W~^, ~}" body)))
+  (let ((body (remove-nested-progn body)))
+    (if *expect-statement*
+	(pprint-logical-block (stream nil)
+	  (if *toplevel-progn*
+	      (let ((*toplevel-progn*))
+		(print-body stream body t))
+	      (progn
+		(write-string "{" stream)
+		(print-body stream body)
+		(write-string "}" stream))))
+	(format stream "~{~W~^, ~}" body))))
 					   
 (defmacro break/continue (stmt)
   `(defspecialform (,stmt &optional (level 1 level-provided-p))

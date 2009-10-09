@@ -105,7 +105,7 @@
 	(*B* 0)
 	(*toplevel-progn* t))
     (pprint-logical-block (stream nil)
-      (write (remove-progn (php/macroexpand-all form)) :pretty t :stream stream))
+      (write (remove-progn (remove-nested-progn (php/macroexpand-all form))) :pretty t :stream stream))
     (values)))
 
 (defun set-php-pprint-dispatch (typespec function &optional (priority 5))
