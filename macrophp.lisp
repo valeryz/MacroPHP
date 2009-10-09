@@ -127,8 +127,20 @@
 (defun replace-slashes (name)
   (substitute #\_ #\- name))
 
+(defun replace-double-stars (name)
+  (let ((prev-star)
+	(new-name (copy-seq name))) 
+    (dotimes (i (length name) new-name)
+      (let ((star (eql #\* (aref name i))))
+	(if (and star prev-star)
+	    (progn
+	      (setf (aref new-name (1- i)) #\:)
+	      (setf (aref new-name i) #\:))
+	    (setf (aref new-name i) (aref name i)))
+	(setf prev-star star)))))
+
 (defun to-php (name)
-  (let ((name (replace-slashes name)))
+  (let ((name (replace-double-stars (replace-slashes name))))
     (if (eql (aref name 0) #\*)
 	(string-upcase (subseq name 1 (if (eql (aref name (1- (length name))) #\*)
 					  (1- (length name))
