@@ -88,4 +88,5 @@
    #:php
    #:js
    #:let
+   #:macrolet
    ))

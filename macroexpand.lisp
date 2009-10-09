@@ -67,15 +67,18 @@
 (defmacro-php-special (var variable &optional init)
   (list* 'var variable (when init (list (expand init)))))
 
+(defun make-expander (name lambda-list body)
+  (cons name
+	(eval `(lambda (form)
+		 (destructuring-bind  ,(cons name lambda-list) form
+		   (declare (ignorable ,name))
+		   (values (progn ,@body) t))))))
+
 (defmacro defmacro-php (name lambda-list &body body)
   `(progn (setf *macro-expanders* (delete ',name *macro-expanders*))
-	  (push (cons ',name
-		      (lambda (form)
-			(destructuring-bind ,(cons name lambda-list) form
-			  (declare (ignorable ,name))
-			  (values (progn ,@body) t))))
+	  (push (make-expander ',name ',lambda-list ',body)
 		*macro-expanders*)))
-
+	    
 (defun php/macroexpand (form)
   "recursively macroexpand form once"
   ;; a real evaluator / code-walker is needed here
@@ -87,6 +90,13 @@
 	      (values form nil)))
 	 ((atom form)
 	  (values form nil))
+	 ((eq (car form) 'macrolet)
+	  (let ((*macro-expanders*
+		 (append
+		  (loop for macro in (cadr form)
+		     collect (make-expander (car macro) (cadr macro) (cddr macro)))
+		  *macro-expanders*)))
+	    (php/macroexpand (cons 'progn (cddr form)))))
 	 (t ;; list
 	  (if (symbolp (car form))
 	      (aif (find-macro-expander (car form))
