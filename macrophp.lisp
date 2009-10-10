@@ -123,36 +123,58 @@
 (defun undefprinter (typespec)
   (set-php-pprint-dispatch typespec nil))
 
+(defun symbol-name-to-php (name)
+  "Convert LISP symbol name to PHP name
 
-(defun replace-slashes (name)
-  (substitute #\_ #\- name))
-
-(defun replace-double-stars (name)
-  (let ((prev-star)
-	(new-name (copy-seq name))) 
-    (dotimes (i (length name) new-name)
-      (let ((star (eql #\* (aref name i))))
-	(if (and star prev-star)
-	    (progn
-	      (setf (aref new-name (1- i)) #\:)
-	      (setf (aref new-name i) #\:))
-	    (setf (aref new-name i) (aref name i)))
-	(setf prev-star star)))))
-
-(defun to-php (name)
-  (let ((name (replace-double-stars (replace-slashes name))))
-    (if (eql (aref name 0) #\*)
-	(string-upcase (subseq name 1 (if (eql (aref name (1- (length name))) #\*)
-					  (1- (length name))
-					  (length name))))
-	(string-downcase name))))
+The rules:
+foo-bar => fooBar
+*foo => FOO
+*foo**bar => FOO::bar
+*foo***bar => FOO::BAR
+"
+  (let ((new-name (copy-seq name)))
+    (do ((i 0 (1+ i)) (j 0) (state :INIT) (all-upper) (upper) (star))
+	((>= i (length name)) (subseq new-name 0 j))
+      (ecase state
+	(:INIT
+	 (if (eql (aref name i) #\*)
+	     (setf all-upper t)
+	     (if (eql (aref name i) #\/)
+		 (setf upper t)
+		 (progn (setf (aref new-name j) (char-downcase (aref name i)))
+			(incf j))))
+	 (setf state :INSIDE))
+	(:INSIDE
+	 (if (eql (aref name i) #\*)
+	     (if star
+		 (progn (setf (aref new-name j) #\:)
+			(incf j)
+			(setf (aref new-name j) #\:)
+			(incf j)
+			(setf state :INIT)
+			(setf all-upper nil)
+			(setf star nil))
+		 (setf star t))
+	     (progn (when star
+		      (setf (aref new-name j) #\*)
+		      (incf j)
+		      (setf star nil))
+		    (if (eql (aref name i) #\-)
+			(setf upper t)
+			(progn
+			  (setf (aref new-name j)
+				(if (or upper all-upper)
+				    (char-upcase (aref name i))
+				    (char-downcase (aref name i))))
+			  (incf j)
+			  (setf upper nil))))))))))
 
 (defprinter (symbol x)
   ;; TODO: use aif
   (let ((print-syntax (cdr (assoc x *symbol-print-names*))))
     (if print-syntax
 	(write-str print-syntax)
-	(write-str (to-php (symbol-name x))))))
+	(write-str (symbol-name-to-php (symbol-name x))))))
 
 (defun php-escape-string (x)
   (with-output-to-string (s)
