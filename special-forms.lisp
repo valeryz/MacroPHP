@@ -171,3 +171,11 @@ if or cond"
 
 (defspecialform (var variable &optional init)
   (fmt "var ~W~:[~; = ~:*~W~]" variable init))
+
+(defspecialform (array &rest init)
+  (fmt "array(~{~:[~W~;~:*~W => ~W~]~^, ~})"
+       (mapcan (lambda (arg) (if (and (listp arg)
+				      (eq (first arg) '=>))
+				 (list (second arg) (third arg))
+				 (list nil arg)))
+	       init)))
