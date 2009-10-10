@@ -86,8 +86,15 @@
 				    function class)
   "All control constructs, that need not be terminated by a semicolon in a progn")
 
-(defvar *symbol-print-names* '((true . "TRUE") (false . "FALSE"))
-  "print names for some special symbols")
+(defvar *symbol-print-names* '((true . "TRUE") (false . "FALSE")
+			       ($_POST . "$_POST") ($_GET . "$_GET") ($_REQUEST . "$_REQUEST")
+			       ($_SESSION . "$_SESSION")
+			       ($_COOKIE . "$_COOKIE")
+			       ($_SERVER . "$_SERVER")
+			       ($_ENV . "$_ENV")
+			       ($_FILES . "$_FILES")
+			       ($GLOBALS . "$_GLOBALS"))
+  "print names for some special symbols, e.g. TRUE, FALSE and superglobals")
 
 (defvar *toplevel-progn* t "Only bound to t at the toplevel of phpizing")
 
