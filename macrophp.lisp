@@ -146,7 +146,7 @@ foo-bar => fooBar
 	(:INIT
 	 (if (eql (aref name i) #\*)
 	     (setf all-upper t)
-	     (if (eql (aref name i) #\/)
+	     (if (eql (aref name i) #\-)
 		 (setf upper t)
 		 (progn (setf (aref new-name j) (char-downcase (aref name i)))
 			(incf j))))
@@ -169,12 +169,18 @@ foo-bar => fooBar
 		    (if (eql (aref name i) #\-)
 			(setf upper t)
 			(progn
-			  (setf (aref new-name j)
-				(if (or upper all-upper)
-				    (char-upcase (aref name i))
-				    (char-downcase (aref name i))))
-			  (incf j)
-			  (setf upper nil))))))))))
+			  (if (and upper (eql (aref name i) #\>))
+			      (progn(setf (aref new-name j) #\-)
+				    (incf j)
+				    (setf (aref new-name j) #\>)
+				    (incf j))
+			      (progn
+				(setf (aref new-name j)
+				      (if (or upper all-upper)
+					  (char-upcase (aref name i))
+					  (char-downcase (aref name i))))
+				(incf j)))
+			      (setf upper nil))))))))))
 
 (defprinter (symbol x)
   ;; TODO: use aif
@@ -237,7 +243,8 @@ foo-bar => fooBar
 		 for ops in (reverse
 			     ;; op php-op associativity arity
 			     ;; each sublist contains ops of the same priority
-			     '(((funcall "" :left 1 :noauto t))
+			     '(((ref "->" :left 2 :skip-first-space t :skip-second-space t))
+			       ((funcall "" :left 1 :noauto t))
 			       ((clone "clone" :none 1 :makespace t)
 				(new "new" :none 1 :makespace t))
 			       ((aref "" :left 2 :noauto t))
@@ -265,7 +272,7 @@ foo-bar => fooBar
 				(>= ">=" :none 2))
 			       ((/= "!=" :none 2)
 				(= "==" :none 2))
-			       ((ref "&" :left 1))
+			       ((getref "&" :left 1))
 			       ((logand "&" :left 2))
 			       ((logxor "^" :left 2))
 			       ((logior "|" :left 2))
@@ -305,7 +312,7 @@ foo-bar => fooBar
 	(when makespace (write-string " " s))
 	(write (pprint-pop) :stream s)))))
 
-(defun make-binary-op (php-op assoc precedence &rest keys &key skip-first-space &allow-other-keys)
+(defun make-binary-op (php-op assoc precedence &rest keys &key skip-first-space skip-second-space &allow-other-keys)
   (declare (ignore keys))
   (lambda (s op)
     (in-op-pprint-block
@@ -318,7 +325,7 @@ foo-bar => fooBar
       ;; first space is skipped for , (comma)
       (unless skip-first-space (write-char #\Space s))
       (write-string php-op s)
-      (write-char #\Space s)
+      (unless skip-second-space (write-char #\Space s))
       (pprint-indent :block 4 s)
       (pprint-newline :fill s)
       (let ((*B*
