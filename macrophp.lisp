@@ -180,7 +180,7 @@ foo-bar => fooBar
 					  (char-upcase (aref name i))
 					  (char-downcase (aref name i))))
 				(incf j)))
-			      (setf upper nil))))))))))
+			  (setf upper nil))))))))))
 
 (defprinter (symbol x)
   ;; TODO: use aif
@@ -271,7 +271,9 @@ foo-bar => fooBar
 				(> ">" :none 2)
 				(>= ">=" :none 2))
 			       ((/= "!=" :none 2)
-				(= "==" :none 2))
+				(= "==" :none 2)
+				(eq "===" :none 2)
+				(neq "!==" :none 2))
 			       ((getref "&" :left 1))
 			       ((logand "&" :left 2))
 			       ((logxor "^" :left 2))
