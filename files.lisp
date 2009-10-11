@@ -11,8 +11,13 @@
 (defun write-php-file (pathname code)
   (with-open-file (out pathname
 		       :direction :output :if-exists :supersede)
-    (write-string "<?php" out)
-    (terpri out)
+    (format out "<?php
+/*
+ * This file is generated with the MacroPHP tool
+ * http://github.com/valeryz/MacroPHP
+ * DO NOT EDIT!
+ */
+")
     (phpize out code)
     (fresh-line out)
     (write-string "?>" out)
