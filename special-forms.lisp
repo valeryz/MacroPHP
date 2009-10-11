@@ -36,9 +36,9 @@ if or cond"
 		      body))
       (unless no-indent (format stream "~0I~:@_"))))
 
-(defun ctl-body (stream body &optional check-if trailing-space)
+(defun ctl-body (stream body &optional check-if trailing-space enclose)
   (let ((body (remove-progn (remove-nested-progn body))))
-    (if (must-enclose-in-braces body check-if)
+    (if (or enclose (must-enclose-in-braces body check-if))
 	(progn
 	  (write-string " {" stream)
 	  (print-body stream body)
@@ -172,4 +172,6 @@ if or cond"
   (pprint-logical-block (stream nil)
     (fmt "try~@/php::ctl-body/" body)
     (loop for (exc-class exc . body) in handlers
-       do (fmt "catch (~W ~W)~@/php::ctl-body/" exc-class exc body))))
+       do
+	 (fmt "catch (~W ~W)" exc-class exc)
+	 (ctl-body stream body nil t t))))
