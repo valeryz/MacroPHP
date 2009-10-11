@@ -89,4 +89,6 @@
    #:js-file
    #:let
    #:macrolet
+   #:try
+   #:catch
    ))

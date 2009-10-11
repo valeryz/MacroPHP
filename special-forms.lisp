@@ -166,3 +166,9 @@ if or cond"
 				 (list (second arg) (third arg))
 				 (list nil arg)))
 	       init)))
+
+(defspecialform (try (&rest handlers) &body body)
+  (pprint-logical-block (stream nil)
+    (fmt "try~@/php::ctl-body/" body)
+    (loop for (exc-class exc . body) in handlers
+       do (fmt "catch (~W ~W)~@/php::ctl-body/" exc-class exc body))))

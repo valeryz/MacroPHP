@@ -83,7 +83,7 @@
 (defvar *expect-statement* t "Whether the statement or expression is expected")
 
 (defvar *no-semicolon-constructs* '(if cond for foreach while switch progn tagbody
-				    function class)
+				    function class try)
   "All control constructs, that need not be terminated by a semicolon in a progn")
 
 (defvar *symbol-print-names* '((true . "TRUE") (false . "FALSE")
