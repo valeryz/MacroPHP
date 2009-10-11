@@ -89,19 +89,6 @@ if or cond"
 	(fmt "foreach (~W as ~W)~/php::ctl-body/"
 	     array-expr binding body))))
 
-(defspecialform (foreach (array-expr binding) &rest body)
-  (pprint-logical-block (stream nil)
-    (write-string "foreach (" stream)
-    (write array-expr :stream stream)
-    (write-string " as " stream)    
-    (if (consp binding)
-	(progn (write (first binding) :stream stream)
-	       (write-string " => " stream)
-	       (write (second binding) :stream stream))
-	(write binding :stream stream))
-    (write-string ")" stream)
-    (ctl-body stream body)))
-
 (defspecialform (progn &rest body)
   (let ((body (remove-nested-progn body)))
     (if *expect-statement*
