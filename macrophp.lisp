@@ -93,6 +93,7 @@
 			       ($_SERVER . "$_SERVER")
 			       ($_ENV . "$_ENV")
 			       ($_FILES . "$_FILES")
+			       ($_HTTP_RAW_POST_DATA . "$_HTTP_RAW_POST_DATA")
 			       ($GLOBALS . "$_GLOBALS"))
   "print names for some special symbols, e.g. TRUE, FALSE and superglobals")
 
