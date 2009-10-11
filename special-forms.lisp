@@ -142,6 +142,7 @@ if or cond"
 (oneargspecial require-once "require_once")
 (oneargspecial echo)
 (oneargspecial go "goto")
+(oneargspecial throw)
 
 (defspecialform (function name (&rest vars) &rest body)
   (pprint-logical-block (stream nil)
