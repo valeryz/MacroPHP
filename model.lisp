@@ -109,6 +109,7 @@
 
 ;; TODO many-to-many, one-to-one etc. see Django docs
 
+
 (defclass model ()
   ((name :initarg :name :reader model-name)
    (fields :initarg :fields :reader model-fields))
@@ -119,3 +120,50 @@
 
 (defmethod model-field ((model model) name)
   (getf (model-fields model) name))
+
+(defclass query-set ()
+  ((result-set :initarg :result-set :initform () :accessor result-set)
+   (from :initarg :from :initform () :accessor from)
+   (distinct :initarg :distinct :initform nil :accessor distinct)
+   (where :initarg :where :initform nil :accessor where)
+   (group-by :initarg :group-by :initform nil :accessor group-by)
+   (having :initarg :having :initform nil :accessor having)
+   (order-by :initarg :order-by :initform nil :accessor order-by)
+   (limit :initarg :limit :initform nil :accessor limit))
+  (:documentation "Query Set"))
+
+(defun make-query-set (&key result-set from distinct)
+  (make-instance 'query-set :result-set result-set :from from :distinct distinct))
+
+(defgeneric select (model  &rest args &key &allow-other-keys)
+  (:documentation "A generic method that constructs a query set for all the objects in the model"))
+
+(defmethod select ((m model) &rest args &key &allow-other-keys)
+  (declare (ignore args))
+  (make-instance 'query-set :from m))
+
+(defun format-expr (e)
+  "format an SQL expression"
+  e)
+
+(defgeneric format-sql (stream qs)
+  (:documentation "print formatted SQL expressio into stream"))
+
+(defmethod format-sql (stream (qs query-set))
+  (format stream
+	  "select ~@[distinct~* ~]~{~a~^, ~} ~@[from ~{~a~^, ~} ~]~@[where ~a ~]~@[group by ~{~a~^, ~} ~]~@[having ~a ~]~@[order by ~{~a~^, ~} ~]~@[~{limit ~a~^ ~@[offset ~a~]~}~]"
+	  (distinct qs)
+	  (result-set qs)
+	  (from qs)
+	  (format-expr (where qs))
+	  (group-by qs)
+	  (format-expr (having qs))
+	  (order-by qs)
+	  (limit qs)))
+#|
+(foreach-row (select goods :id (aref $_POST "id")) 
+	     (:tr (:td (:a :href (#|TODO: how do we describe the URLS|#) name))
+		  (:td (:span :class "description" description))
+		  (:td (:span :class "qty" qty))))
+
+|#
