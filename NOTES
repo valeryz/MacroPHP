@@ -1,0 +1,17 @@
+-*- mode: org -*-
+
+* MacroPHP
+** TODO review what must be done and plan
+*** DONE PHP string literals should use single quotes wherever possible (if there's no \n \t etc) :mac:
+    Also, it is good to provide a nice syntax for double quote interpolation.
+*** study the sources of CL-WHO and see if it can produce not only HTML but PHP code that produces HTML :mac:
+*** study CL-SQL and see if we can at all use it to write out SQL statements and parts thereof :mac:
+*** make forms classes							:mac:
+*** make the forms generators and acceptors/validators			:mac:
+*** make the ORM							:mac:
+*** Scriptable PHP DOM							:mac:
+
+* References:
+ - [[file:///Users/vz/Documents/PHP Manual/index.html][PHP Manual]]
+ - [[/Users/vz/Documents/Books/LISP/Common Lisp the Language, 2nd Edition - Guy L. Steele.pdf][ClTl2]]
+ 
