@@ -1,7 +1,7 @@
 
 (in-package :php)
 
-(phpize '(progn
+(phpize t '(progn
   (setq $db (mysql-pconnect ""))
   (mysql-select-db "mydb")
   (setq $res (mysql-query "select * from items"))
