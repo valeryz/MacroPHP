@@ -189,8 +189,8 @@ foo-bar => fooBar
     (if print-syntax
 	(write-str print-syntax)
 	(write-str (symbol-name-to-php (symbol-name x))))))
-
-(defun php-escape-string (x)
+    
+(defun php-escape-string-double (x)
   (with-output-to-string (s)
     (dotimes (i (length x))
       (let ((c (aref x i)))
@@ -199,6 +199,7 @@ foo-bar => fooBar
 	   (#\Newline "\\n")
 	   (#\Tab "\\t")
 	   (#\Return "\\r")
+	   (#\PageUp "\\v")
 	   (#\Page "\\f")
 	   (#\\ "\\\\")
 	   (#\$ "\\$")
@@ -209,10 +210,30 @@ foo-bar => fooBar
 		  (format nil "\\0~O" (char-code c)))))
 	 s)))))
 
+(defun php-escape-string-single (x)
+  (with-output-to-string (s)
+    (dotimes (i (length x))
+      (let ((c (aref x i)))
+	(write-string
+	 (case c
+	   (#\' "\\'")
+	   (#\\ "\\\\")
+	   (t (format nil "~C" c)))
+	 s)))))
+
+(defun representable-as-signle-quote (x)
+  (not (find-if-not #'graphic-char-p x)))
+
 (defprinter (string x)
-  (write-str "\"")
-  (write-str (php-escape-string x))
-  (write-str "\""))
+  (if (representable-as-signle-quote x)
+      (progn
+	(write-str "'")
+	(write-str (php-escape-string-single x))
+	(write-str "'"))
+      (progn
+	(write-str "\"")
+	(write-str (php-escape-string-double x))
+	(write-str "\""))))
 
 (defprinter (null x 1)
   ;; do nothing
