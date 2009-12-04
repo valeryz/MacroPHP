@@ -3,7 +3,7 @@
 * MacroPHP
 ** TODO review what must be done and plan
 *** DONE PHP string literals should use single quotes wherever possible (if there's no \n \t etc) :mac:
-    Also, it is good to provide a nice syntax for double quote interpolation.
+*** provide a nice syntax for double quote interpolation of variables
 *** study the sources of CL-WHO and see if it can produce not only HTML but PHP code that produces HTML :mac:
 *** study CL-SQL and see if we can at all use it to write out SQL statements and parts thereof :mac:
 *** make forms classes							:mac:
