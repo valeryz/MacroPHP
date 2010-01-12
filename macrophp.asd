@@ -12,4 +12,4 @@
 	       (:file "files" :depends-on ("special-forms"))
 	       (:file "model" :depends-on ("package"))
 	       (:file "test" :depends-on ("files")))
-  :depends-on ("arnesi" "parenscript" "cl-interpol"))
+  :depends-on ("arnesi" "parenscript" "cl-interpol" "cl-who"))

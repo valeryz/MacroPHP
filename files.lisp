@@ -29,8 +29,17 @@
 	 (parenscript:compile-script code :output-stream out)
 	 (fresh-line out)))
 
+(defmacro write-html-file (pathame code)
+  (let ((out (gensym)))
+    `(with-open-file (,out ,pathame :direction :output :if-exists :supersede)
+       (cl-who:with-html-output (,out ,out)
+	 ,@code))))
+  
 (defmacro php-file (path &body code)
   `(write-php-file ,(rootpath path) ',(cons 'progn code)))
 
 (defmacro js-file (path &body code)
   `(write-js-file ,(rootpath path) ',(cons 'progn code)))
+
+(defmacro html-file (path &body code)
+  `(write-html-file ,(rootpath path) ,@code))
