@@ -1,15 +1,31 @@
 -*- mode: org -*-
 
-* MacroPHP
-** TODO review what must be done and plan
-*** DONE PHP string literals should use single quotes wherever possible (if there's no \n \t etc) :mac:
-*** provide a nice syntax for double quote interpolation of variables
-*** study the sources of CL-WHO and see if it can produce not only HTML but PHP code that produces HTML :mac:
-*** study CL-SQL and see if we can at all use it to write out SQL statements and parts thereof :mac:
-*** make forms classes							:mac:
-*** make the forms generators and acceptors/validators			:mac:
-*** make the ORM							:mac:
-*** Scriptable PHP DOM							:mac:
+* DONE MacroPHP
+ This is going to be a fantastic tool for PHP RAD!
+** TODO find out what's going on with *symbol-print-names* printing on SBCL
+** DONE PHP string literals should use single quotes wherever possible (if there's no \n \t etc) :mac:
+** TODO think about test suite
+** TODO look at weblocks and how they create declarative web site descriptions.
+** TODO provide a nice syntax for double quote interpolation of variables
+** DONE study the sources of CL-WHO and see if it can produce not only HTML but PHP code that produces HTML :mac:
+    It seems this is not an option. But I can write something similar,
+    e.g.
+: (phpize t '(:ul (foreach ($a $x) (:li $x))))
+    would evaluate to
+      #+BEGIN_SRC php
+        echo "<ul>";
+        foreach ($a as $x) {
+            echo "<li>";
+            echo "$x";
+            echo "</li>";
+         }
+       #+END_SRC
+** TODO look at how parenscript implements HTML templating and so something similar
+** study CL-SQL and see if we can at all use it to write out SQL statements and parts thereof :mac:
+** TODO make forms classes						:mac:
+** TODO make the forms generators and acceptors/validators		:mac:
+** TODO make the ORM							:mac:
+** TODO Scriptable PHP DOM						:mac:
 
 * References:
  - [[file:///Users/vz/Documents/PHP Manual/index.html][PHP Manual]]
