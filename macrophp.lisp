@@ -86,7 +86,7 @@
 				    function class try)
   "All control constructs, that need not be terminated by a semicolon in a progn")
 
-(defvar *symbol-print-names* '((true . "TRUE") (false . "FALSE")
+(defvar *symbol-print-names* '((true . "TRUE") (false . "FALSE") (null . "NULL")
 			       ($_POST . "$_POST") ($_GET . "$_GET") ($_REQUEST . "$_REQUEST")
 			       ($_SESSION . "$_SESSION")
 			       ($_COOKIE . "$_COOKIE")
