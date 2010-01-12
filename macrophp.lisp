@@ -199,7 +199,7 @@ foo-bar => fooBar
 	   (#\Newline "\\n")
 	   (#\Tab "\\t")
 	   (#\Return "\\r")
-	   (#\PageUp "\\v")
+	   ((code-char 11) "\\v")
 	   (#\Page "\\f")
 	   (#\\ "\\\\")
 	   (#\$ "\\$")
